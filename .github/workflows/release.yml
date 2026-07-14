@@ -1,0 +1,61 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g. v1.6.0)'
+        required: true
+        default: 'v1.6.0'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  release:
+    name: Cut GitHub Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+          fi
+          echo "Resolved tag: ${{ steps.tag.outputs.tag }}"
+
+      - name: Extract changelog section
+        id: changelog
+        run: |
+          python3 - "${{ steps.tag.outputs.tag }}" <<'PY'
+          import sys, re
+          tag = sys.argv[1]
+          text = open('CHANGELOG.md').read()
+          pattern = re.compile(rf'## {re.escape(tag)}.*?(?=\n## |\Z)', re.S)
+          match = pattern.search(text)
+          if not match:
+              print(f'No changelog section found for {tag}', file=sys.stderr)
+              sys.exit(1)
+          body = match.group(0).strip()
+          open('/tmp/release-body.md', 'w').write(body)
+          print('Changelog section captured.')
+          PY
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ steps.tag.outputs.tag }}
+          generate_release_notes: true
+          body_path: /tmp/release-body.md
+          fail_on_unmatched_files: true

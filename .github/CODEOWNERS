@@ -1,0 +1,18 @@
+# CODEOWNERS
+
+# Cada mudança requer revisão do owner padrão antes de merge.
+*   @viniciusfs76
+
+# Documentação oficial só pode mudar via PR de fontes oficiais cruzadas.
+references/present-mode-official.md   @viniciusfs76
+references/ayoa-present-mode-official.md  @viniciusfs76
+references/ayoa-interface-equivalences.md  @viniciusfs76
+references/ayoa-ui-map.md  @viniciusfs76
+
+# Scripts de automação exigem revisão adicional por impacto operacional.
+scripts/ayoa-presenter.js  @viniciusfs76
+scripts/ayoa-login.js  @viniciusfs76
+scripts/ayoa-capture-slides.js  @viniciusfs76
+scripts/ayoa-video.js  @viniciusfs76
+scripts/ayoa-pipeline.js  @viniciusfs76
+scripts/ayoa-test-suite.js  @viniciusfs76

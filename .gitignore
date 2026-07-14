@@ -1,0 +1,30 @@
+# Build artifacts
+node_modules/
+npm-debug.log*
+*.log
+.cache/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Credentials — NUNCA commitar
+*.cookies.json
+*.token.txt
+ayoa-cookies*.json
+.env
+.env.local
+
+# Test artefacts
+tmp/
+slides/
+*.png
+*.mp4
+*.webm
+coverage/
+.nyc_output/
+
+# Local config overrides
+.cookies/

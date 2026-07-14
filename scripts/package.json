@@ -1,0 +1,34 @@
+{
+  "name": "ayoa-mindmap-scripts",
+  "version": "1.0.0",
+  "description": "Test runners and shared deps for the Ayoa mindmap skill scripts.",
+  "private": true,
+  "type": "commonjs",
+  "main": "ayoa-capture-slides.js",
+  "scripts": {
+    "test": "node --test ayoa-login.test.js ayoa-navigation.test.js ayoa-readiness.test.js ayoa-present-mode.test.js ayoa-present-anti-regression.test.js ayoa-present-fallback.test.js ayoa-present-transitions.test.js ayoa-present-source-rotation.test.js ayoa-present-edge-cases.test.js ayoa-present-i18n.test.js ayoa-present-states.test.js ayoa-present-recovery.test.js ayoa-present-flicker.test.js ayoa-present-presentation-id.test.js ayoa-present-aria.test.js ayoa-present-driver.test.js",
+    "test:login": "node --test ayoa-login.test.js",
+    "test:navigation": "node --test ayoa-navigation.test.js",
+    "test:readiness": "node --test ayoa-readiness.test.js",
+    "test:present-mode": "node --test ayoa-present-mode.test.js",
+    "test:anti-regression": "node --test ayoa-present-anti-regression.test.js",
+    "test:fallback": "node --test ayoa-present-fallback.test.js",
+    "test:transitions": "node --test ayoa-present-transitions.test.js",
+    "test:source-rotation": "node --test ayoa-present-source-rotation.test.js",
+    "test:edge-cases": "node --test ayoa-present-edge-cases.test.js",
+    "test:i18n": "node --test ayoa-present-i18n.test.js",
+    "test:states": "node --test ayoa-present-states.test.js",
+    "test:recovery": "node --test ayoa-present-recovery.test.js",
+    "test:flicker": "node --test ayoa-present-flicker.test.js",
+    "test:presentation-id": "node --test ayoa-present-presentation-id.test.js",
+    "test:aria": "node --test ayoa-present-aria.test.js",
+    "test:driver": "node --test ayoa-present-driver.test.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "puppeteer-core": "^25.3.0"
+  }
+}
+
