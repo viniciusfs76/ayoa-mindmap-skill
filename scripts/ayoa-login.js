@@ -74,10 +74,18 @@ async function login(page, cookies) {
   // Step 1: navigate to root domain (required before setCookie)
   log('Navigating to www.ayoa.com...');
   await gotoWithRetry(page, 'https://www.ayoa.com/', { waitUntil: 'domcontentloaded', timeout: 45000 });
-  
-  // Step 2: inject cookies
-  log(`Injecting ${cookies.length} cookies...`);
-  await page.setCookie(...cookies);
+
+  // Step 2: inject cookies (individually so a single bad cookie doesn't abort)
+  let injected = 0;
+  for (const c of cookies) {
+    try {
+      await page.setCookie(c);
+      injected++;
+    } catch (e) {
+      log(`Skipped cookie ${c.name}: ${e.message.split('\n')[0]}`);
+    }
+  }
+  log(`Injected ${injected} of ${cookies.length} cookies`);
   
   // Step 3: navigate to app subdomain to establish session. Ayoa occasionally
   // stalls on the first SPA bootstrap even though the second attempt succeeds.

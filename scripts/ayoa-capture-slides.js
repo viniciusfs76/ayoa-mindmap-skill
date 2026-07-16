@@ -76,14 +76,26 @@ const log = (...a) => console.error(`[${new Date().toISOString().slice(11,23)}]`
   log(`Capturing slides ${startIdx + 1} to ${endIdx} of ${allSlides.length}`);
 
   // Capture each slide
+  let captureFailures = 0;
   for (let i = startIdx; i < endIdx; i++) {
     const slide = allSlides[i];
     const slideNum = i + 1;
 
-    const clicked = await presenter.navigateToSlide(page, slide.id);
-    if (!clicked) {
-      log(`Slide ${slideNum} — SKIP (not found)`);
-      continue;
+    // Navigate to slide via the present-mode path, then wait for the canvas
+    // to settle on the right slide. This is the key change vs the old
+    // navigateToSlide: previously the script took a screenshot of the
+    // editor canvas before Ayoa had moved the presentation canvas to this
+    // slide, producing duplicate or "stuck on slide 1" PNGs.
+    const state = await presenter.goToSlideForCapture(page, slide.id, { timeout: 12000 });
+    if (!state.settled) {
+      captureFailures++;
+      log(`Slide ${slideNum} — FAIL (${state.reason}, activeId=${state.activeId})`);
+      // Re-enter present mode and try the Next-arrow path as a fallback.
+      const recovered = await presenter.advanceToSlideViaNextArrow(page, slide.id, { timeout: 8000 });
+      if (!recovered) {
+        log(`Slide ${slideNum} — SKIP (recovery via Next arrow also failed)`);
+        continue;
+      }
     }
 
     await sleep(WAIT_MS);
@@ -98,6 +110,9 @@ const log = (...a) => console.error(`[${new Date().toISOString().slice(11,23)}]`
   }
 
   log(`Capture complete: ${endIdx - startIdx} slides saved to ${OUTPUT_DIR}`);
+  if (captureFailures > 0) {
+    log(`WARNING: ${captureFailures} slide(s) required Next-arrow recovery; verify they match expected content.`);
+  }
 
   // Verify
   const files = fs.readdirSync(OUTPUT_DIR).filter(f => f.startsWith('slide-') && f.endsWith('.png'));

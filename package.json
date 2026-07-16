@@ -1,7 +1,7 @@
 {
   "name": "ayoa-mindmap-skill",
-  "version": "1.6.0",
-  "description": "Puppeteer skill for the Ayoa Mindmap Present mode (Ayoa Ultimate) — automated presentation preparation, navigation and video capture.",
+  "version": "1.16.3",
+  "description": "Puppeteer skill for the Ayoa Mindmap Present mode (Ayoa Ultimate) \u2014 automated presentation preparation, navigation and video capture.",
   "private": true,
   "type": "commonjs",
   "main": "scripts/ayoa-presenter.js",
@@ -9,7 +9,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "test": "cd scripts && node --test ayoa-login.test.js ayoa-navigation.test.js ayoa-readiness.test.js ayoa-present-mode.test.js ayoa-present-anti-regression.test.js ayoa-present-fallback.test.js ayoa-present-transitions.test.js ayoa-present-source-rotation.test.js ayoa-present-edge-cases.test.js ayoa-present-i18n.test.js ayoa-present-states.test.js ayoa-present-recovery.test.js ayoa-present-flicker.test.js ayoa-present-presentation-id.test.js ayoa-present-aria.test.js ayoa-present-driver.test.js",
+    "test": "cd scripts && node --test ayoa-login.test.js ayoa-navigation.test.js ayoa-readiness.test.js ayoa-present-mode.test.js ayoa-present-anti-regression.test.js ayoa-present-fallback.test.js ayoa-present-transitions.test.js ayoa-present-source-rotation.test.js ayoa-present-edge-cases.test.js ayoa-present-i18n.test.js ayoa-present-states.test.js ayoa-present-recovery.test.js ayoa-present-flicker.test.js ayoa-present-presentation-id.test.js ayoa-present-aria.test.js tests/ayoa-import-fixtures.test.js tests/ayoa-import-name-match.test.js tests/ayoa-import-cookie-shape.test.js tests/ayoa-import-pick-input.test.js tests/ayoa-import-puppeteer.test.js tests/ayoa-capture-flow.test.js tests/ayoa-multi-slide-capture.test.js tests/ayoa-import-fixtures.test.js tests/ayoa-import-name-match.test.js tests/ayoa-import-cookie-shape.test.js tests/ayoa-import-pick-input.test.js tests/ayoa-import-puppeteer.test.js tests/ayoa-capture-flow.test.js tests/ayoa-multi-slide-capture.test.js ayoa-present-driver.test.js",
     "test:all": "cd scripts && node ayoa-test-suite.js --test test-present-mode",
     "test:login": "cd scripts && node --test ayoa-login.test.js",
     "test:navigation": "cd scripts && node --test ayoa-navigation.test.js",

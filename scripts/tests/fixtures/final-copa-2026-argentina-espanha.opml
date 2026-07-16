@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+  <head>
+    <title>Final da Copa do Mundo FIFA 2026 — Argentina x Espanha</title>
+    <dateCreated>Thu, 16 Jul 2026 12:30:00 -0300</dateCreated>
+    <ownerName>Vinicius Silva</ownerName>
+  </head>
+  <body>
+    <outline text="🏆 Final da Copa do Mundo FIFA 2026 — Argentina x Espanha" _color="#D4AF37">
+      <outline text="📅 Jogo decisivo" _color="#2F80ED">
+        <outline text="Domingo, 19 de julho de 2026"/>
+        <outline text="New York New Jersey Stadium — East Rutherford, NJ"/>
+        <outline text="15h local (EDT / UTC−4)"/>
+        <outline text="Argentina defende o título de 2022"/>
+        <outline text="Espanha busca seu 2º título, após 2010"/>
+      </outline>
+      <outline text="🇦🇷 Caminho da Argentina" _color="#75AADB">
+        <outline text="32 avos: 3–2 sobre Cabo Verde"/>
+        <outline text="Oitavas: 3–2 sobre o Egito"/>
+        <outline text="Quartas: 3–1 sobre a Suíça"/>
+        <outline text="Semifinal: 2–1 sobre a Inglaterra"/>
+        <outline text="Virada na semi: Enzo 85', Martínez 90+2'"/>
+      </outline>
+      <outline text="🇪🇸 Caminho da Espanha" _color="#C60B1E">
+        <outline text="32 avos: 3–0 sobre a Áustria"/>
+        <outline text="Oitavas: 1–0 sobre Portugal"/>
+        <outline text="Quartas: 2–1 sobre a Bélgica"/>
+        <outline text="Semifinal: 2–0 sobre a França"/>
+        <outline text="Na semi: Oyarzabal 22' (p), Pedro Porro 58'"/>
+      </outline>
+      <outline text="⭐ Protagonistas" _color="#9B51E0">
+        <outline text="Lionel Messi — criação, liderança e bola parada"/>
+        <outline text="Lautaro Martínez — profundidade e gol decisivo"/>
+        <outline text="Enzo Fernández — chegada e chute de média distância"/>
+        <outline text="Lamine Yamal — drible, amplitude e criação"/>
+        <outline text="Mikel Oyarzabal — 5 gols no torneio"/>
+        <outline text="Rodri e Pedri — controle do meio-campo espanhol"/>
+      </outline>
+      <outline text="🧠 Duelo tático" _color="#27AE60">
+        <outline text="Espanha: posse alta, pressão pós-perda e amplitude"/>
+        <outline text="Argentina: bloco adaptável, transição e experiência"/>
+        <outline text="Zona-chave: Rodri/Pedri contra Enzo/Mac Allister"/>
+        <outline text="Flancos: Yamal contra o lado esquerdo argentino"/>
+        <outline text="Decisão provável nos detalhes e bolas paradas"/>
+      </outline>
+      <outline text="📊 Números da campanha" _color="#F2994A">
+        <outline text="Argentina: 11 gols e 6 sofridos no mata-mata"/>
+        <outline text="Espanha: 8 gols e 1 sofrido no mata-mata"/>
+        <outline text="Espanha sofreu seu único gol nas quartas"/>
+        <outline text="Argentina venceu 4 jogos de mata-mata por margem curta"/>
+        <outline text="Oyarzabal marcou seu 5º gol na semifinal"/>
+      </outline>
+      <outline text="🔥 Narrativas da final" _color="#EB5757">
+        <outline text="Messi pode encerrar a Copa com bicampeonato seguido"/>
+        <outline text="Yamal disputa a final três dias após completar 19 anos"/>
+        <outline text="Choque entre experiência campeã e nova geração espanhola"/>
+        <outline text="Reedição do duelo de campeões de 2010 e 2022"/>
+        <outline text="Final inédita: Argentina x Espanha"/>
+      </outline>
+      <outline text="❓ Perguntas decisivas" _color="#56CCF2">
+        <outline text="A Argentina conseguirá conter Yamal sem perder compactação?"/>
+        <outline text="A Espanha resistirá às transições e à bola parada de Messi?"/>
+        <outline text="Quem controlará o ritmo nos 20 minutos finais?"/>
+        <outline text="Qual banco terá maior impacto se houver prorrogação?"/>
+      </outline>
+    </outline>
+  </body>
+</opml>

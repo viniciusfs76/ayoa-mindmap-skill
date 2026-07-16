@@ -128,6 +128,18 @@ function buildPanelDom({
         items().forEach(x => x.classList.remove('selected'));
         if (el) el.classList.add('selected');
         updateNavState();
+        // Mirror what Ayoa does in production: the central canvas re-renders
+        // for the active slide so the screenshot varies per-slide.
+        const canvas = document.querySelector('.map-canvas');
+        if (canvas) {
+          const idx = items().indexOf(el);
+          const title = el ? (el.querySelector('.slides-list-group-content')?.innerText || 'Slide') : 'Slide';
+          canvas.innerHTML = '<div class="map-node active" data-slide-index="' + idx + '">'
+            + '<div class="map-node-title">' + title + '</div>'
+            + '<div class="map-node-body">Slide ' + (idx + 1) + ' of ' + items().length
+            + ' — unique body for slide ' + (idx + 1) + '</div>'
+            + '</div>';
+        }
       };
       items().forEach(el => el.addEventListener('click', () => select(el)));
       if (play) play.addEventListener('click', () => {
