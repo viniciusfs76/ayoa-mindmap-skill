@@ -96,6 +96,119 @@ async function navigateToSlide(page, slideId) {
   }, slideId);
 }
 
+// Click the play/stop button in the presenter toolbar to enter Presentation mode.
+// Returns true if presenting, false if the button never appeared.
+async function enterPresentationMode(page, { timeout = 15000 } = {}) {
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline) {
+    const state = await page.evaluate(() => {
+      const panel = document.querySelector('.slides-list-container');
+      const presenting = panel && panel.classList.contains('presenting');
+      const playBtn = document.querySelector('.slides-play-stop-button');
+      return { presenting: Boolean(presenting), hasPlayBtn: Boolean(playBtn) };
+    });
+    if (state.presenting) return true;
+    if (state.hasPlayBtn) {
+      await page.evaluate(() => {
+        const btn = document.querySelector('.slides-play-stop-button');
+        if (btn) btn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      });
+    }
+    await sleep(300);
+  }
+  return false;
+}
+
+// Click the Next arrow of the presenter's slide nav until activeId matches the
+// expected slide. This is the path the Ayoa Web app uses internally for the
+// "Advancing" transition; clicking the item in the left list DOES NOT move the
+// canvas in presentation mode. Returns the final activeId, or null on timeout.
+async function advanceToSlideViaNextArrow(page, expectedSlideId, { timeout = 8000, pollInterval = 150 } = {}) {
+  const deadline = Date.now() + timeout;
+  let lastSeen = null;
+  // First, check if we are already on the target slide.
+  const start = await page.evaluate(() => {
+    const sel = document.querySelector('.slides-list-group-item.selected');
+    return sel ? sel.id : null;
+  });
+  if (start === expectedSlideId) {
+    const presenting = await page.evaluate(() => {
+      const panel = document.querySelector('.slides-list-container');
+      return Boolean(panel && panel.classList.contains('presenting'));
+    });
+    if (presenting) return start;
+  }
+  // Click the Next arrow until activeId matches or the control disappears
+  // (we hit the end).
+  while (Date.now() < deadline) {
+    const cur = await page.evaluate(() => {
+      const sel = document.querySelector('.slides-list-group-item.selected');
+      const nextBtn = document.querySelector('.slides-nav-container > :last-child');
+      const panel = document.querySelector('.slides-list-container');
+      return {
+        activeId: sel ? sel.id : null,
+        nextDisabled: !nextBtn || nextBtn.getAttribute('aria-disabled') === 'true' || nextBtn.disabled,
+        presenting: Boolean(panel && panel.classList.contains('presenting')),
+      };
+    });
+    lastSeen = cur.activeId;
+    if (cur.activeId === expectedSlideId && cur.presenting) return cur.activeId;
+    if (cur.activeId === expectedSlideId) {
+      // Right slide, but not presenting yet. Re-enter present and continue.
+      await enterPresentationMode(page);
+      continue;
+    }
+    if (cur.nextDisabled) {
+      // Reached the end without finding the target. Bail.
+      return null;
+    }
+    await page.evaluate(() => {
+      const next = document.querySelector('.slides-nav-container > :last-child');
+      if (next) next.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    await sleep(pollInterval);
+  }
+  return null;
+}
+
+// Combined "go to slide and wait for canvas to settle" used by the capture
+// pipeline. Returns { activeId, presenting, settled } on success; { activeId,
+// presenting, settled:false, reason } on failure.
+async function goToSlideForCapture(page, slideId, { timeout = 12000 } = {}) {
+  const deadline = Date.now() + timeout;
+  // 1) Ensure presenting.
+  if (!(await enterPresentationMode(page))) {
+    return { activeId: null, presenting: false, settled: false, reason: 'enter-presentation-failed' };
+  }
+  // 2) Click the slide item in the left list (this is the legitimate
+  //    jump-to path; from here the canvas will be re-rendered on that slide).
+  await navigateToSlide(page, slideId);
+  // 3) Wait for the canvas to settle: activeId === slideId AND presenting.
+  while (Date.now() < deadline) {
+    const s = await page.evaluate((id) => {
+      const sel = document.querySelector('.slides-list-group-item.selected');
+      const panel = document.querySelector('.slides-list-container');
+      return {
+        activeId: sel ? sel.id : null,
+        presenting: Boolean(panel && panel.classList.contains('presenting')),
+      };
+    }, slideId);
+    if (s.activeId === slideId && s.presenting) {
+      return { activeId: s.activeId, presenting: true, settled: true };
+    }
+    if (s.activeId !== slideId) {
+      // Jump again in case the click was consumed by another handler.
+      await navigateToSlide(page, slideId);
+    }
+    await sleep(150);
+  }
+  const final = await page.evaluate((id) => {
+    const sel = document.querySelector('.slides-list-group-item.selected');
+    return sel ? sel.id : null;
+  }, slideId);
+  return { activeId: final, presenting: false, settled: false, reason: 'timeout' };
+}
+
 async function clickPlayButton(page) {
   const playBtn = await page.$('.slides-play-stop-button');
   if (!playBtn) return false;
@@ -700,13 +813,27 @@ async function runFullPresentation(page, {
 if (require.main === module) {
   (async () => {
     const login = require('./ayoa-login.js');
-    const cookies = JSON.parse(fs.readFileSync(COOKIES_FILE, 'utf-8')).map(c => ({
-      name: c.name, value: c.value,
-      domain: c.domain || '.ayoa.com',
-      path: c.path || '/',
-      httpOnly: c.httpOnly || false, secure: c.secure || false,
-      sameSite: (c.sameSite || 'Lax').charAt(0).toUpperCase() + (c.sameSite || 'Lax').slice(1),
-    }));
+    const cookiesRaw = JSON.parse(fs.readFileSync(COOKIES_FILE, 'utf-8'));
+    // Filter + normalise: Puppeteer rejects some cookie fields (e.g. `__Host-*`
+    // prefix with `Path` not exactly `/`, or `sameSite: 'unspecified'`).
+    // Inject individually so a single bad cookie doesn't abort the run.
+    const cookies = cookiesRaw
+      .filter(c => c.name && c.value && c.domain)
+      .map(c => {
+        let ss = (c.sameSite || 'Lax');
+        if (ss === 'no_restriction') ss = 'None';
+        const cap = ss.charAt(0).toUpperCase() + ss.slice(1);
+        if (!['Lax', 'Strict', 'None'].includes(cap)) ss = 'Lax';
+        return {
+          name: String(c.name),
+          value: String(c.value),
+          domain: c.domain.startsWith('.') ? c.domain : '.' + c.domain,
+          path: String(c.path || '/'),
+          httpOnly: Boolean(c.httpOnly),
+          secure: Boolean(c.secure),
+          sameSite: ss.charAt(0).toUpperCase() + ss.slice(1),
+        };
+      });
 
     const browser = await login.launchBrowser();
     const page = await browser.newPage();
@@ -773,6 +900,9 @@ module.exports = {
   openPresenter,
   getSlideList,
   navigateToSlide,
+  enterPresentationMode,
+  advanceToSlideViaNextArrow,
+  goToSlideForCapture,
   clickPlayButton,
   autoCreatePresentation,
   preparePresentation,

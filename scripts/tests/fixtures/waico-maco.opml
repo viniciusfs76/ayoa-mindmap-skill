@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+  <head>
+    <title>WAICO-MACO</title>
+    <dateModified>2026-07-15T14:37:00-03:00</dateModified>
+    <expansionState>0,1,2,3,4,5,6,7,8</expansionState>
+  </head>
+  <body>
+    <outline text="WAICO-MACO" _icon="★" _color="#CC0000">
+      <outline text="OBJETIVO" _icon="◎" _color="#3366CC">
+        <outline text="CLAREZA" _color="#339933"/>
+        <outline text="FOCO" _color="#339933"/>
+        <outline text="RESULTADO" _color="#339933"/>
+      </outline>
+      <outline text="CONTEXTO" _icon="◐" _color="#3366CC">
+        <outline text="PÚBLICO" _color="#339933"/>
+        <outline text="TEMPO" _color="#339933"/>
+        <outline text="LOCAL" _color="#339933"/>
+      </outline>
+      <outline text="IDEIAS" _icon="✦" _color="#3366CC">
+        <outline text="PRIMEIRA" _color="#339933"/>
+        <outline text="SEGUNDA" _color="#339933"/>
+        <outline text="TERCEIRA" _color="#339933"/>
+      </outline>
+      <outline text="RECURSOS" _icon="◇" _color="#3366CC">
+        <outline text="HUMANO" _color="#339933"/>
+        <outline text="MATERIAL" _color="#339933"/>
+        <outline text="FINANCEIRO" _color="#339933"/>
+      </outline>
+      <outline text="PRÓXIMOS" _icon="→" _color="#3366CC">
+        <outline text="AGORA" _color="#339933"/>
+        <outline text="DEPOIS" _color="#339933"/>
+        <outline text="TARDE" _color="#339933"/>
+      </outline>
+      <outline text="RISCOS" _icon="△" _color="#3366CC">
+        <outline text="BLOQUEIO" _color="#339933"/>
+        <outline text="ATRITO" _color="#339933"/>
+        <outline text="EXTERNO" _color="#339933"/>
+      </outline>
+      <outline text="RESULTADOS" _icon="✓" _color="#3366CC">
+        <outline text="CURTO" _color="#339933"/>
+        <outline text="MÉDIO" _color="#339933"/>
+        <outline text="LONGO" _color="#339933"/>
+      </outline>
+      <outline text="APRENDIZADOS" _icon="✎" _color="#3366CC">
+        <outline text="SOBRE MIM" _color="#339933"/>
+        <outline text="SOBRE O OUTRO" _color="#339933"/>
+        <outline text="SOBRE O SISTEMA" _color="#339933"/>
+      </outline>
+    </outline>
+  </body>
+</opml>
