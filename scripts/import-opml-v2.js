@@ -36,10 +36,21 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const log = (...a) => console.error(`[${new Date().toISOString().slice(11, 23)}]`, ...a);
 
 (async () => {
-  log('Reading OPML and cookies...');
+  log('Reading OPML...');
   const opmlContent = fs.readFileSync(OPML, 'utf8');
-  const cookies = JSON.parse(fs.readFileSync(COOKIES, 'utf8'));
   log(`OPML: ${OPML} (${opmlContent.length} bytes)`);
+
+  // Pre-flight cookie validation before launching Puppeteer
+  const cvPath = require('path').join(process.env.HOME, '.hermes/skills/ayoa-login/scripts/lib/cookie-validator.js');
+  const { validateCookies } = require(cvPath);
+  const cookieCheck = validateCookies(COOKIES, { ignoreCache: false });
+  if (cookieCheck.status === 'EXPIRED') {
+    console.error(`✗ Cookies expired: ${cookieCheck.reason}. Re-export from Chrome.`);
+    process.exit(2);
+  }
+  log(`Cookie preflight: ${cookieCheck.status} — ${cookieCheck.reason}`);
+
+  const cookies = JSON.parse(fs.readFileSync(COOKIES, 'utf8'));
   log(`Cookies: ${cookies.length}`);
 
   log('Launching browser...');

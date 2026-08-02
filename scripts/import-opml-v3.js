@@ -93,13 +93,23 @@ const SCREENSHOT = ARGS.screenshot || `${process.env.HOME}/.ayoa-import-v3.png`;
 const MAP_NAME = ARGS.name || null; // null = use OPML <title> or first node text
 
 (async () => {
-  log('Reading OPML and cookies...');
+  log('Reading OPML...');
   if (!fs.existsSync(OPML)) { console.error(`FATAL: OPML not found: ${OPML}`); process.exit(1); }
   const opmlContent = fs.readFileSync(OPML, 'utf8');
-  if (!fs.existsSync(COOKIES)) { console.error(`FATAL: cookies not found: ${COOKIES}`); process.exit(1); }
-  const cookiesRaw = JSON.parse(fs.readFileSync(COOKIES, 'utf8'));
   log(`OPML: ${OPML} (${opmlContent.length} bytes)`);
-  log(`Cookies: ${cookiesRaw.length}`);
+
+  // Pre-flight cookie validation
+  if (!fs.existsSync(COOKIES)) { console.error(`FATAL: cookies not found: ${COOKIES}`); process.exit(1); }
+  const cvPath = require('path').join(process.env.HOME, '.hermes/skills/ayoa-login/scripts/lib/cookie-validator.js');
+  const { validateCookies } = require(cvPath);
+  const cookieCheck = validateCookies(COOKIES, { ignoreCache: false });
+  if (cookieCheck.status === 'EXPIRED') {
+    console.error(`✗ Cookies expired: ${cookieCheck.reason}. Re-export from Chrome.`);
+    process.exit(2);
+  }
+  log(`Cookie preflight: ${cookieCheck.status} — ${cookieCheck.reason}`);
+
+  const cookiesRaw = JSON.parse(fs.readFileSync(COOKIES, 'utf8'));
 
   // Map the Android-export cookies to the shape aioa-login expects.
   const cookies = cookiesRaw

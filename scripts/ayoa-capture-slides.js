@@ -29,7 +29,9 @@ function parseArgs() {
 const ARGS = parseArgs();
 const COOKIES_FILE = ARGS.cookies || (() => { throw new Error('--cookies required') })();
 const TARGET = ARGS.target || (() => { throw new Error('--target required') })();
-const OUTPUT_DIR = ARGS.output || `${process.env.HOME}/storage/downloads/presentation`;
+const { resolveOutputDir } = require('./lib/ayoa-output.js');
+const OUTPUT_DIR = ARGS.output
+  || resolveOutputDir({ home: process.env.HOME, targetUrl: TARGET, explicitName: ARGS.name });
 const FROM = parseInt(ARGS.from) || 1;
 const TO = ARGS.to ? parseInt(ARGS.to) : Infinity;
 const WAIT_MS = parseInt(ARGS.wait) || 1200;
@@ -38,6 +40,16 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 const log = (...a) => console.error(`[${new Date().toISOString().slice(11,23)}]`, ...a);
 
 (async () => {
+  // Pre-flight cookie validation
+  const cvPath = require('path').join(process.env.HOME, '.hermes/skills/ayoa-login/scripts/lib/cookie-validator.js');
+  const { validateCookies } = require(cvPath);
+  const cookieCheck = validateCookies(COOKIES_FILE, { ignoreCache: false });
+  if (cookieCheck.status === 'EXPIRED') {
+    console.error(`✗ Cookies expired: ${cookieCheck.reason}. Re-export from Chrome.`);
+    process.exit(2);
+  }
+  log(`Cookie preflight: ${cookieCheck.status} — ${cookieCheck.reason}`);
+
   const login = require('./ayoa-login.js');
   const presenter = require('./ayoa-presenter.js');
 

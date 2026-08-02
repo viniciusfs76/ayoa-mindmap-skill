@@ -1,6 +1,6 @@
 {
   "name": "ayoa-mindmap-skill",
-  "version": "1.16.3",
+  "version": "1.16.30",
   "description": "Puppeteer skill for the Ayoa Mindmap Present mode (Ayoa Ultimate) \u2014 automated presentation preparation, navigation and video capture.",
   "private": true,
   "type": "commonjs",

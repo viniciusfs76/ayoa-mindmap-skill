@@ -149,6 +149,8 @@ const mindmapId = job.items[0].result.paperIds[0];
 - Reutilizar o mesmo x-client-id em requests paralelas: Ayoa pode
   retornar 429 se duas requests com mesmo clientId chegarem em < 50ms.
   Gere um UUID por request.
+- **Multi-linha no atributo `text="..."` do OPML gera nodes duplicados e `\n` fantasmas no mapa.** Validado 2026-07-19 (mapa `a33a3ead-a3a8-4800-9c29-762b9a4a8bdf`, briefing Venu 30d, 82 nodes → 82 slides, mas com ~15 slides duplicados por causa de `\n` no text). O Ayoa interpreta cada `\n` como separador de sub-ramo quando renderiza o deck no Presenter; o mesmo nó aparece 2x no deck. **Antes de gerar o OPML:** sanitizar `text="..."` substituindo `\n` por ` / ` (espaço-slash-espaço, padrão usado em citações textuais) ou por ` — ` (em-dash). Não usar `<br/>` ou HTML — Ayoa trata como nó.
+- **Relaxamento do mínimo de cookies documentado (14-16 → 9 funcionais).** A `references/ayoa-2-hop-login-fix.md` documenta que o mínimo é 14-16 cookies (auth.ayoa.com + app.ayoa.com + www.ayoa.com + .ayoa.com + tracking). Validado 2026-07-19: **9 cookies só com domain `.ayoa.com`** (apenas os 3 críticos: `ayoa.ap`, `ayoa.sid`, `ayoa.user` + 6 de tracking) funcionaram para `import-opml.js + presenter prepare + capture slides + video MP4` no mapa `a33a3ead-...`. O cookie `__Secure-next-auth.session-token` (Next.js auth) **não é necessário** quando os 3 críticos Ayoa estão válidos. Tracking cookies (`_fbp`, `_ga`, `_rdt_*`) **não são necessários** para import+presenter+capture+video. O mínimo prático para o pipeline core é **9 cookies `.ayoa.com`** com `ayoa.ap/sid/user` válidos.
 
 ## Verificacao externa (pytest tests/)
 

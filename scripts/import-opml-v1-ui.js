@@ -67,6 +67,34 @@ async function main() {
 
   const mapName = args.name || parsed.central || 'Untitled';
   const cookiesPath = args.cookies || path.join(process.env.HOME, 'tmp', 'ayoa-cookies-test.json');
+
+  // Pre-flight cookie validation before launching automation
+  if (!fs.existsSync(cookiesPath)) {
+    process.stderr.write(`WARN: Cookies file not found: ${cookiesPath}\n`);
+    process.stderr.write('Manual import instructions:\n');
+    process.stderr.write(`  1. Open https://app.ayoa.com/ (login manually)\n`);
+    process.stderr.write(`  2. + → New → Mind Map → name "${mapName}" → OK\n`);
+    process.stderr.write(`  3. Import → select ${opmlPath} → Import\n`);
+    process.stderr.write(`  4. Pass the mindmap URL back to the agent\n`);
+    process.stdout.write(JSON.stringify({ ok: false, cookiesFile: cookiesPath, opml: opmlPath, mapName }, null, 2) + '\n');
+    return 1;
+  }
+  try {
+    const cvPath = path.join(process.env.HOME, '.hermes/skills/ayoa-login/scripts/lib/cookie-validator.js');
+    if (fs.existsSync(cvPath)) {
+      const { validateCookies } = require(cvPath);
+      const cookieCheck = validateCookies(cookiesPath, { ignoreCache: false });
+      if (cookieCheck.status === 'EXPIRED') {
+        process.stderr.write(`✗ Cookies expired: ${cookieCheck.reason}. Re-export from Chrome.\n`);
+        process.stdout.write(JSON.stringify({ ok: false, status: 'EXPIRED', reason: cookieCheck.reason, opml: opmlPath, mapName }, null, 2) + '\n');
+        return 1;
+      }
+      process.stderr.write(`Cookie preflight: ${cookieCheck.status} — ${cookieCheck.reason}\n`);
+    }
+  } catch (e) {
+    process.stderr.write(`Cookie validation unavailable: ${e.message}\n`);
+  }
+
   const screenshotDir = args['screenshot-dir'] || null;
   const screenshots = screenshotDir ? [
     path.join(screenshotDir, '1-modal.png'),

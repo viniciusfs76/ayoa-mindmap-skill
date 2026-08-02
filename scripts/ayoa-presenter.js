@@ -812,6 +812,16 @@ async function runFullPresentation(page, {
 // Main
 if (require.main === module) {
   (async () => {
+    // Pre-flight cookie validation
+    const cvPath = require('path').join(process.env.HOME, '.hermes/skills/ayoa-login/scripts/lib/cookie-validator.js');
+    const { validateCookies } = require(cvPath);
+    const cookieCheck = validateCookies(COOKIES_FILE, { ignoreCache: false });
+    if (cookieCheck.status === 'EXPIRED') {
+      console.error(`✗ Cookies expired: ${cookieCheck.reason}. Re-export from Chrome.`);
+      process.exit(2);
+    }
+    console.error(`Cookie preflight: ${cookieCheck.status} — ${cookieCheck.reason}`);
+
     const login = require('./ayoa-login.js');
     const cookiesRaw = JSON.parse(fs.readFileSync(COOKIES_FILE, 'utf-8'));
     // Filter + normalise: Puppeteer rejects some cookie fields (e.g. `__Host-*`
@@ -841,7 +851,9 @@ if (require.main === module) {
     await page.setUserAgent('Mozilla/5.0 (X11; Linux aarch64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.6478.182 Safari/537.36');
 
     await login.login(page, cookies);
-    await login.navigateToMindmap(page, TARGET);
+    // Mapas grandes (200+ nós) montam o canvas em 2 fases — timeout de 40s
+    // default pode estourar. Usar 120s com polling de 2s (pitfall canvas 2 fases).
+    await login.navigateToMindmap(page, TARGET, { readyTimeout: 120000, pollInterval: 2000 });
 
     if (MODE === 'open' || MODE === 'list') {
       const slides = await openPresenter(page);

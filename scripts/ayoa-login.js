@@ -12,7 +12,11 @@ const fs = require('fs');
 const path = require('path');
 
 const PREFIX = process.env.PREFIX || '/data/data/com.termux/files/usr';
-const CHROME_PATH = `${PREFIX}/lib/chromium/headless_shell`;
+// CHROME_PATH configurável via env (AYOA_CHROME). Default: headless_shell.
+// headless_shell é detectável pelo Ayoa (fingerprint) e pode causar redirect
+// falso-positivo p/ login mesmo com cookies válidos; usar `chrome` completo
+// (AYOA_CHROME=$PREFIX/lib/chromium/chrome) quando o mapa não carregar.
+const CHROME_PATH = process.env.AYOA_CHROME || `${PREFIX}/lib/chromium/headless_shell`;
 
 function parseArgs() {
   const args = {};
@@ -35,7 +39,9 @@ const ARGS = parseArgs();
 
 const COOKIES = ARGS.cookies || (() => { throw new Error('--cookies required') })();
 const TARGET = ARGS.target || (() => { throw new Error('--target required') })();
-const OUTPUT_DIR = ARGS.output || `${process.env.HOME}/storage/downloads/presentation`;
+const { resolveOutputDir } = require('./lib/ayoa-output.js');
+const OUTPUT_DIR = ARGS.output
+  || resolveOutputDir({ home: process.env.HOME, targetUrl: TARGET, explicitName: ARGS.name });
 
 const ts = () => new Date().toISOString().slice(11, 23);
 const log = (...a) => console.error(`[${ts()}]`, ...a);

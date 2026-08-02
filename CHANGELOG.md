@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.16.30 — 2026-08-02
+- Primeiro push desde v1.16.3 (2026-07-16). Sync do estado local pós-v1.16.29.
+- `ayoa-login.js`: CHROME_PATH configurável via env `AYOA_CHROME` (default headless_shell; `AYOA_CHROME=$PREFIX/lib/chromium/chrome` quando o mapa não carregar — fingerprint).
+- `ayoa-presenter.js`: pre-flight de cookies (exit 2 se EXPIRED) + timeout 120s com polling 2s para mapas grandes (200+ nós).
+- Guardrail: npm test 249/249 + pytest 22/22 (`cd scripts/tests && python3 -m pytest`).
+- Bundle global ayoa v1.0.0 (hub + 8 módulos) criado em 2026-07-31.
+
+
 Todas as mudanças notáveis da skill são registradas no campo `changelog` do `SKILL.md`. Este arquivo existe para navegação rápida.
 
 ## v1.6.0 — 2026-07-14

@@ -30,7 +30,9 @@ function parseArgs() {
 const ARGS = parseArgs();
 const COOKIES = ARGS.cookies || (() => { throw new Error('--cookies required') })();
 const TARGET = ARGS.target || (() => { throw new Error('--target required') })();
-const OUTPUT = ARGS.output || `${process.env.HOME}/storage/downloads/presentation`;
+const { resolveOutputDir } = require('./lib/ayoa-output.js');
+const OUTPUT = ARGS.output
+  || resolveOutputDir({ home: process.env.HOME, targetUrl: TARGET, explicitName: ARGS.name });
 const CAPTURE_FROM = ARGS['capture-from'];
 const CAPTURE_TO = ARGS['capture-to'];
 const WAIT = ARGS.wait || '1200';

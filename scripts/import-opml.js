@@ -48,6 +48,18 @@ const OPML_FILE = ARGS.opml || `${process.env.HOME}/tmp/waico-maco.opml`;
 const OUTPUT = ARGS.output || `${process.env.HOME}/tmp/ayoa-import-opml.json`;
 const SCREENSHOT = ARGS.screenshot || `${process.env.HOME}/.ayoa-import-opml.png`;
 const FALLBACK_UI = ARGS['fallback-ui'] !== 'false'; // default: try UI if API path fails
+// Branch style applied to the imported map. The Ayoa /v2/import/text endpoint
+// accepts these values in the themeId field. --branch-style is the canonical
+// flag; --theme-id is kept as a legacy alias. Default: organic_v2.
+const VALID_BRANCH_STYLES = new Set(['box','capture','direction','dsa','organic','organic_dsa','organic_v2','radial','speed','straight','curved','angled','classic']);
+const THEME_ID = (() => {
+  const raw = ARGS['branch-style'] || ARGS['theme-id'] || ARGS.themeId;
+  if (!raw) return 'organic_v2';
+  if (!VALID_BRANCH_STYLES.has(raw)) {
+    throw new Error(`--branch-style ${raw} is not a known Ayoa themeId. Allowed: ${Array.from(VALID_BRANCH_STYLES).join(', ')}`);
+  }
+  return raw.trim();
+})();
 const SKILL_LIB = path.join(process.env.HOME, '.hermes/skills/software-development/ayoa-mindmap/scripts/lib');
 const { parseOpml } = require(path.join(SKILL_LIB, 'opml-parser.js'));
 
@@ -117,30 +129,38 @@ async function login(page, cookies) {
 }
 
 async function captureAuthHeaders(page) {
-  // The dashboard fires /v2/analytics-events or /v2/sync as soon as it boots.
-  // Listen once, then dismiss the prompt and resolve with the captured headers.
-  return new Promise(async (resolve, reject) => {
-    let captured = null;
-    const onReq = (r) => {
-      if (captured) return;
-      const h = r.headers();
-      if (h['x-auth-token'] && h['x-client-id']) captured = h;
-    };
-    page.on('request', onReq);
-    const timeout = setTimeout(() => { page.off('request', onReq); reject(new Error('auth headers not captured in 8s')); }, 8000);
-    try {
-      // Force a benign request that carries the same headers.
-      await page.evaluate(async () => {
-        await fetch('/v2/import-jobs?t=' + Date.now(), { credentials: 'include' }).catch(() => null);
-      });
-    } catch {}
-    // give the listener a tick
-    await sleep(500);
-    clearTimeout(timeout);
-    page.off('request', onReq);
-    if (!captured) return reject(new Error('auth headers still missing after probe'));
-    resolve(captured);
-  });
+  // The Ayoa dashboard fires /v2/client when the Centrifugo WebSocket
+  // channel opens, and that request carries the full auth-header suite
+  // (x-auth-token, x-client-id, x-source, x-source-version, x-agent). We
+  // hook that request directly via page.on('request') rather than firing
+  // our own fetch() because page.evaluate(fetch) loses auth headers in
+  // modern browsers (CORS / Fetch metadata policy).
+  const REQUIRED = ['x-auth-token','x-client-id','x-source','x-source-version','x-agent'];
+  const capturedHeaders = { value: null };
+  const onAuthReq = (r) => {
+    if (capturedHeaders.value) return;
+    const u = r.url();
+    if (!u.includes('app.ayoa.com/v2/')) return;
+    const h = r.headers();
+    if (h['x-auth-token'] && h['x-client-id']) {
+      const out = {};
+      for (const k of REQUIRED) if (h[k]) out[k] = h[k];
+      capturedHeaders.value = out;
+    }
+  };
+  page.on('request', onAuthReq);
+  // Force the dashboard to fire /v2/client again by navigating home.
+  try { await page.goto('https://app.ayoa.com/', { waitUntil: 'domcontentloaded', timeout: 15000 }); } catch {}
+  // Wait up to 25s for the request hook to capture both tokens.
+  const deadline = Date.now() + 25000;
+  while (!capturedHeaders.value && Date.now() < deadline) {
+    await new Promise(r => setTimeout(r, 500));
+  }
+  page.off('request', onAuthReq);
+  if (!capturedHeaders.value) {
+    throw new Error('auth headers not captured within 25s; cookie session may have expired');
+  }
+  return capturedHeaders.value;
 }
 
 async function apiPath(page, opmlContent, boardName, authHeaders) {
@@ -174,15 +194,15 @@ async function apiPath(page, opmlContent, boardName, authHeaders) {
   // 3. /v2/import/text
   const fileUrl = upload.url;
   const boardId = 'board-' + Math.random().toString(36).slice(2, 10) + '-' + Date.now().toString(36);
-  const imRes = await page.evaluate(async ({ fileUrl, fileName, boardName, boardId, authHeaders }) => {
+  const imRes = await page.evaluate(async ({ fileUrl, fileName, boardName, boardId, themeId, authHeaders }) => {
     const r = await fetch('/v2/import/text', {
       method: 'POST',
       credentials: 'include',
       headers: { 'content-type': 'application/json', ...authHeaders },
-      body: JSON.stringify({ fileUrl, fileName, type: 'TEXT_FILE', boardName, themeId: 'organic_v2', boardId }),
+      body: JSON.stringify({ fileUrl, fileName, type: 'TEXT_FILE', boardName, themeId, boardId }),
     });
     return { status: r.status, text: await r.text() };
-  }, { fileUrl, fileName: filename, boardName, boardId, authHeaders: authHeaders || {} });
+  }, { fileUrl, fileName: filename, boardName, boardId, themeId: THEME_ID, authHeaders: authHeaders || {} });
   log('/v2/import/text status:', imRes.status);
   if (imRes.status >= 400) throw new Error(`/v2/import/text ${imRes.status}: ${imRes.text}`);
 
@@ -228,6 +248,17 @@ async function verifyAndFinalise(page, opmlContent, mindmapId, boardName) {
 async function main() {
   if (!fs.existsSync(OPML_FILE)) throw new Error(`OPML not found: ${OPML_FILE}`);
   if (!fs.existsSync(COOKIES_FILE)) throw new Error(`cookies not found: ${COOKIES_FILE}`);
+
+  // Pre-flight: validate cookies locally before launching Puppeteer.
+  // Uses shared cookie-validator from ayoa-login skill (single source of truth).
+  const COOKIE_VALIDATOR = path.join(process.env.HOME, '.hermes/skills/ayoa-login/scripts/lib/cookie-validator.js');
+  const { validateCookies } = require(COOKIE_VALIDATOR);
+  const cookieCheck = validateCookies(COOKIES_FILE, { ignoreCache: false });
+  if (cookieCheck.status === 'EXPIRED') {
+    throw new Error(`Cookies expired: ${cookieCheck.reason}. Re-export from Chrome.`);
+  }
+  log(`Cookie preflight: ${cookieCheck.status} — ${cookieCheck.reason}`);
+
   const opmlContent = fs.readFileSync(OPML_FILE, 'utf8');
   const cookiesRaw = JSON.parse(fs.readFileSync(COOKIES_FILE, 'utf8'));
   const cookies = cookiesRaw.map(normaliseCookie).filter(c => c.name && c.value && c.domain);
@@ -240,6 +271,8 @@ async function main() {
   let result;
   try {
     await login(page, cookies);
+    // Wait briefly for the next /v2/ request so captureAuthHeaders sees it.
+    await new Promise(r => setTimeout(r, 3000));
     const authHeaders = await captureAuthHeaders(page).catch(err => {
       log('Auth headers capture failed:', err.message);
       return {};
@@ -260,6 +293,15 @@ async function main() {
     }
   } catch (e) {
     result = { ok: false, error: e.message, stack: e.stack };
+    // If auth failed, invalidate cookie cache so next run re-validates
+    if (e.message && (e.message.includes('auth') || e.message.includes('login') || e.message.includes('redirect'))) {
+      try {
+        const COOKIE_VALIDATOR = path.join(process.env.HOME, '.hermes/skills/ayoa-login/scripts/lib/cookie-validator.js');
+        const { invalidateCache } = require(COOKIE_VALIDATOR);
+        invalidateCache();
+        log('Cookie cache invalidated due to auth failure');
+      } catch {}
+    }
     try { await page.screenshot({ path: SCREENSHOT.replace('.png', '-error.png'), fullPage: true }); } catch {}
   } finally {
     await browser.close();
@@ -270,4 +312,4 @@ async function main() {
 }
 
 if (require.main === module) main();
-module.exports = { normaliseCookie, deriveBoardName, pickBoardNameInput, parseOpml, login, apiPath, verifyAndFinalise };
+module.exports = { normaliseCookie, deriveBoardName, pickBoardNameInput, parseOpml, login, apiPath, verifyAndFinalise, VALID_BRANCH_STYLES };

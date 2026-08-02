@@ -48,6 +48,16 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const log = (...a) => console.error(`[${new Date().toISOString().slice(11, 23)}]`, ...a);
 
 (async () => {
+  // Pre-flight cookie validation before launching Puppeteer
+  const cvPath = require('path').join(process.env.HOME, '.hermes/skills/ayoa-login/scripts/lib/cookie-validator.js');
+  const { validateCookies } = require(cvPath);
+  const cookieCheck = validateCookies(COOKIES_FILE, { ignoreCache: false });
+  if (cookieCheck.status === 'EXPIRED') {
+    console.error(`✗ Cookies expired: ${cookieCheck.reason}. Re-export from Chrome.`);
+    process.exit(2);
+  }
+  log(`Cookie preflight: ${cookieCheck.status} — ${cookieCheck.reason}`);
+
   log('Launching browser…');
   const browser = await puppeteer.launch({
     executablePath: CHROME_PATH,
